@@ -3,7 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <nan.h>
+#include <napi.h>
+#include <uv.h>
 #include <list>
 #include <string>
 
@@ -15,13 +16,13 @@ struct WriteBaton {
   size_t bufferLength;
   size_t offset;
   size_t bytesWritten;
-  Nan::Persistent<v8::Object> buffer;
-  Nan::Callback callback;
+  Napi::Persistent<v8::Object> buffer;
+  Napi::FunctionReference callback;
   int result;
   char errorString[ERROR_STRING_SIZE];
 };
 
-NAN_METHOD(Write);
+Napi::Value Write(const Napi::CallbackInfo& info);
 void EIO_Write(uv_work_t* req);
 void EIO_AfterWrite(uv_work_t* req);
 
@@ -33,10 +34,10 @@ struct ReadBaton {
   size_t bytesToRead;
   size_t offset;
   char errorString[ERROR_STRING_SIZE];
-  Nan::Callback callback;
+  Napi::FunctionReference callback;
 };
 
-NAN_METHOD(Read);
+Napi::Value Read(const Napi::CallbackInfo& info);
 void EIO_Read(uv_work_t* req);
 void EIO_AfterRead(uv_work_t* req);
 #endif  // SRC_SERIALPORT_WIN_H_

@@ -56,7 +56,8 @@
     "bindings": "1.2.1",
     "commander": "^2.11.0",
     "debug": "^2.6.6",
-    "nan": "^2.6.2",
+    "node-addon-api": "0.5.1",
+    "node-addon-api": "^0.5.1",
     "node-pre-gyp": "^0.6.36",
     "safe-buffer": "^5.0.1"
   },

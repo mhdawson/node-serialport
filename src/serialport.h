@@ -3,41 +3,42 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <nan.h>
+#include <napi.h>
+#include <uv.h>
 #include <list>
 #include <string>
 
 #define ERROR_STRING_SIZE 1024
 
-NAN_METHOD(List);
+Napi::Value List(const Napi::CallbackInfo& info);
 void EIO_List(uv_work_t* req);
 void EIO_AfterList(uv_work_t* req);
 
-NAN_METHOD(Open);
+Napi::Value Open(const Napi::CallbackInfo& info);
 void EIO_Open(uv_work_t* req);
 void EIO_AfterOpen(uv_work_t* req);
 
-NAN_METHOD(Update);
+Napi::Value Update(const Napi::CallbackInfo& info);
 void EIO_Update(uv_work_t* req);
 void EIO_AfterUpdate(uv_work_t* req);
 
-NAN_METHOD(Close);
+Napi::Value Close(const Napi::CallbackInfo& info);
 void EIO_Close(uv_work_t* req);
 void EIO_AfterClose(uv_work_t* req);
 
-NAN_METHOD(Flush);
+Napi::Value Flush(const Napi::CallbackInfo& info);
 void EIO_Flush(uv_work_t* req);
 void EIO_AfterFlush(uv_work_t* req);
 
-NAN_METHOD(Set);
+Napi::Value Set(const Napi::CallbackInfo& info);
 void EIO_Set(uv_work_t* req);
 void EIO_AfterSet(uv_work_t* req);
 
-NAN_METHOD(Get);
+Napi::Value Get(const Napi::CallbackInfo& info);
 void EIO_Get(uv_work_t* req);
 void EIO_AfterGet(uv_work_t* req);
 
-NAN_METHOD(Drain);
+Napi::Value Drain(const Napi::CallbackInfo& info);
 void EIO_Drain(uv_work_t* req);
 void EIO_AfterDrain(uv_work_t* req);
 
@@ -55,12 +56,12 @@ enum SerialPortStopBits {
   SERIALPORT_STOPBITS_TWO      = 3
 };
 
-SerialPortParity ToParityEnum(const v8::Local<v8::String>& str);
+SerialPortParity ToParityEnum(const Napi::String& str);
 SerialPortStopBits ToStopBitEnum(double stopBits);
 
 struct OpenBaton {
   char errorString[ERROR_STRING_SIZE];
-  Nan::Callback callback;
+  Napi::FunctionReference callback;
   char path[1024];
   int fd;
   int result;
@@ -83,7 +84,7 @@ struct OpenBaton {
 
 struct ConnectionOptionsBaton {
   char errorString[ERROR_STRING_SIZE];
-  Nan::Callback callback;
+  Napi::FunctionReference callback;
   int fd;
   int baudRate;
 };
@@ -99,14 +100,14 @@ struct ListResultItem {
 };
 
 struct ListBaton {
-  Nan::Callback callback;
+  Napi::FunctionReference callback;
   std::list<ListResultItem*> results;
   char errorString[ERROR_STRING_SIZE];
 };
 
 struct SetBaton {
   int fd;
-  Nan::Callback callback;
+  Napi::FunctionReference callback;
   int result;
   char errorString[ERROR_STRING_SIZE];
   bool rts;
@@ -118,7 +119,7 @@ struct SetBaton {
 
 struct GetBaton {
   int fd;
-  Nan::Callback callback;
+  Napi::FunctionReference callback;
   char errorString[ERROR_STRING_SIZE];
   bool cts;
   bool dsr;
@@ -127,7 +128,7 @@ struct GetBaton {
 
 struct VoidBaton {
   int fd;
-  Nan::Callback callback;
+  Napi::FunctionReference callback;
   char errorString[ERROR_STRING_SIZE];
 };
 

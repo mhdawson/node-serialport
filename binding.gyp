@@ -1,6 +1,8 @@
 {
   'targets': [{
     'target_name': 'serialport',
+      'cflags!': [ '-fno-exceptions' ],
+      'cflags_cc!': [ '-fno-exceptions' ],
     'sources': [
       'src/serialport.cpp'
     ],

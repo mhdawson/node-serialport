@@ -1,6 +1,7 @@
 #include "./serialport.h"
 #include "./serialport_win.h"
-#include <nan.h>
+#include <napi.h>
+#include <uv.h>
 #include <list>
 #include <vector>
 #include <string.h>
@@ -243,26 +244,29 @@ bool IsClosingHandle(int fd) {
   return false;
 }
 
-NAN_METHOD(Write) {
+Napi::Value Write(const Napi::CallbackInfo& info) {
   // file descriptor
-  if (!info[0]->IsInt32()) {
-    Nan::ThrowTypeError("First argument must be an int");
+  if (!info[0].IsNumber()) {
+    Napi::TypeError::New(env, "First argument must be an int").ThrowAsJavaScriptException();
+  return env.Null();
     return;
   }
-  int fd = Nan::To<int>(info[0]).FromJust();
+  int fd = info[0].As<Napi::Number>().Int32Value();
 
   // buffer
-  if (!info[1]->IsObject() || !node::Buffer::HasInstance(info[1])) {
-    Nan::ThrowTypeError("Second argument must be a buffer");
+  if (!info[1].IsObject() || !info[1].IsBuffer()) {
+    Napi::TypeError::New(env, "Second argument must be a buffer").ThrowAsJavaScriptException();
+  return env.Null();
     return;
   }
-  v8::Local<v8::Object> buffer = info[1]->ToObject();
-  char* bufferData = node::Buffer::Data(buffer);
-  size_t bufferLength = node::Buffer::Length(buffer);
+  Napi::Object buffer = info[1].ToObject();
+  char* bufferData = buffer.As<Napi::Buffer<char>>().Data();
+  size_t bufferLength = buffer.As<Napi::Buffer<char>>().Length();
 
   // callback
-  if (!info[2]->IsFunction()) {
-    Nan::ThrowTypeError("Third argument must be a function");
+  if (!info[2].IsFunction()) {
+    Napi::TypeError::New(env, "Third argument must be a function").ThrowAsJavaScriptException();
+  return env.Null();
     return;
   }
 
@@ -273,7 +277,7 @@ NAN_METHOD(Write) {
   baton->bufferData = bufferData;
   baton->bufferLength = bufferLength;
   baton->offset = 0;
-  baton->callback.Reset(info[2].As<v8::Function>());
+  baton->callback.Reset(info[2].As<Napi::Function>());
 
   uv_work_t* req = new uv_work_t();
   req->data = baton;
@@ -324,58 +328,64 @@ void EIO_Write(uv_work_t* req) {
 }
 
 void EIO_AfterWrite(uv_work_t* req) {
-  Nan::HandleScope scope;
+  Napi::HandleScope scope(env);
   WriteBaton* baton = static_cast<WriteBaton*>(req->data);
   delete req;
 
-  v8::Local<v8::Value> argv[1];
+  Napi::Value argv[1];
   if (baton->errorString[0]) {
-    argv[0] = v8::Exception::Error(Nan::New<v8::String>(baton->errorString).ToLocalChecked());
+    argv[0] = v8::Exception::Error(Napi::String::New(env, baton->errorString));
   } else {
-    argv[0] = Nan::Null();
+    argv[0] = env.Null();
   }
   baton->callback.Call(1, argv);
   delete baton;
 }
 
-NAN_METHOD(Read) {
+Napi::Value Read(const Napi::CallbackInfo& info) {
   // file descriptor
-  if (!info[0]->IsInt32()) {
-    Nan::ThrowTypeError("First argument must be a fd");
+  if (!info[0].IsNumber()) {
+    Napi::TypeError::New(env, "First argument must be a fd").ThrowAsJavaScriptException();
+  return env.Null();
     return;
   }
-  int fd = Nan::To<int>(info[0]).FromJust();
+  int fd = info[0].As<Napi::Number>().Int32Value();
 
   // buffer
-  if (!info[1]->IsObject() || !node::Buffer::HasInstance(info[1])) {
-    Nan::ThrowTypeError("Second argument must be a buffer");
+  if (!info[1].IsObject() || !info[1].IsBuffer()) {
+    Napi::TypeError::New(env, "Second argument must be a buffer").ThrowAsJavaScriptException();
+  return env.Null();
     return;
   }
-  v8::Local<v8::Object> buffer = info[1]->ToObject();
-  size_t bufferLength = node::Buffer::Length(buffer);
+  Napi::Object buffer = info[1].ToObject();
+  size_t bufferLength = buffer.As<Napi::Buffer<char>>().Length();
 
   // offset
-  if (!info[2]->IsInt32()) {
-    Nan::ThrowTypeError("Third argument must be an int");
+  if (!info[2].IsNumber()) {
+    Napi::TypeError::New(env, "Third argument must be an int").ThrowAsJavaScriptException();
+  return env.Null();
     return;
   }
-  int offset = Nan::To<v8::Int32>(info[2]).ToLocalChecked()->Value();
+  int offset = Napi::To<v8::Int32>(info[2])->Value();
 
   // bytes to read
-  if (!info[3]->IsInt32()) {
-    Nan::ThrowTypeError("Fourth argument must be an int");
+  if (!info[3].IsNumber()) {
+    Napi::TypeError::New(env, "Fourth argument must be an int").ThrowAsJavaScriptException();
+  return env.Null();
     return;
   }
-  size_t bytesToRead = Nan::To<v8::Int32>(info[3]).ToLocalChecked()->Value();
+  size_t bytesToRead = Napi::To<v8::Int32>(info[3])->Value();
 
   if ((bytesToRead + offset) > bufferLength) {
-    Nan::ThrowTypeError("'bytesToRead' + 'offset' cannot be larger than the buffer's length");
+    Napi::TypeError::New(env, "'bytesToRead' + 'offset' cannot be larger than the buffer's length").ThrowAsJavaScriptException();
+  return env.Null();
     return;
   }
 
   // callback
-  if (!info[4]->IsFunction()) {
-    Nan::ThrowTypeError("Fifth argument must be a function");
+  if (!info[4].IsFunction()) {
+    Napi::TypeError::New(env, "Fifth argument must be a function").ThrowAsJavaScriptException();
+  return env.Null();
     return;
   }
 
@@ -385,8 +395,8 @@ NAN_METHOD(Read) {
   baton->offset = offset;
   baton->bytesToRead = bytesToRead;
   baton->bufferLength = bufferLength;
-  baton->bufferData = node::Buffer::Data(buffer);
-  baton->callback.Reset(info[4].As<v8::Function>());
+  baton->bufferData = buffer.As<Napi::Buffer<char>>().Data();
+  baton->callback.Reset(info[4].As<Napi::Function>());
 
   uv_work_t* req = new uv_work_t();
   req->data = baton;
@@ -460,17 +470,17 @@ void EIO_Read(uv_work_t* req) {
 }
 
 void EIO_AfterRead(uv_work_t* req) {
-  Nan::HandleScope scope;
+  Napi::HandleScope scope(env);
   ReadBaton* baton = static_cast<ReadBaton*>(req->data);
   delete req;
 
-  v8::Local<v8::Value> argv[2];
+  Napi::Value argv[2];
   if (baton->errorString[0]) {
-    argv[0] = Nan::Error(baton->errorString);
-    argv[1] = Nan::Undefined();
+    argv[0] = Napi::Error::New(env, baton->errorString);
+    argv[1] = env.Undefined();
   } else {
-    argv[0] = Nan::Null();
-    argv[1] = Nan::New<v8::Integer>((int)baton->bytesRead);
+    argv[0] = env.Null();
+    argv[1] = Napi::Number::New(env, (int)baton->bytesRead);
   }
 
   baton->callback.Call(2, argv);
