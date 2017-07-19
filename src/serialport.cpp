@@ -8,48 +8,47 @@
 #endif
 
 Napi::Value getValueFromObject(Napi::Object options, std::string key) {
-  Napi::String v8str = Napi::String::New(env, key);
+  Napi::String v8str = Napi::String::New(options.Env(), key);
   return (options).Get(v8str);
 }
 
 int getIntFromObject(Napi::Object options, std::string key) {
-  return Napi::To<v8::Int32>(getValueFromObject(options, key))->Value();
+  return getValueFromObject(options, key).ToNumber().Int64Value();
 }
 
 bool getBoolFromObject(Napi::Object options, std::string key) {
-  return getValueFromObject(options, key.To<Napi::Boolean>())->Value();
+  return getValueFromObject(options, key).ToBoolean().Value();
 }
 
 Napi::String getStringFromObj(Napi::Object options, std::string key) {
-  return getValueFromObject(options, key.To<Napi::String>());
+  return getValueFromObject(options, key).ToString();
 }
 
 double getDoubleFromObject(Napi::Object options, std::string key) {
-  return getValueFromObject(options, key.As<Napi::Number>().DoubleValue()).FromMaybe(0);
+  return getValueFromObject(options, key).ToNumber().DoubleValue();
 }
 
 Napi::Value Open(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
   // path
   if (!info[0].IsString()) {
-    Napi::TypeError::New(env, "First argument must be a string").ThrowAsJavaScriptException();
-  return env.Null();
-    return;
+    Napi::TypeError::New(info.Env(), "First argument must be a string").ThrowAsJavaScriptException();
+    return env.Null();
   }
   Napi::String path(env, info[0].ToString());
 
   // options
   if (!info[1].IsObject()) {
     Napi::TypeError::New(env, "Second argument must be an object").ThrowAsJavaScriptException();
-  return env.Null();
-    return;
+    return env.Null();
   }
   Napi::Object options = info[1].ToObject();
 
   // callback
   if (!info[2].IsFunction()) {
     Napi::TypeError::New(env, "Third argument must be a function").ThrowAsJavaScriptException();
-  return env.Null();
-    return;
+    return env.Null();
   }
 
   OpenBaton* baton = new OpenBaton();
